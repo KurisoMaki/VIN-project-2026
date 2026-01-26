@@ -3,7 +3,7 @@
 
 Interaktivní generativní nástroj, který transformuje zvuk na abstraktní malbu ve stylu Jacksona Pollocka.
 
-**Odkaz na aplikaci:** [ZDE VLOŽ SVŮJ ODKAZ Z GITHUB PAGES]
+**Odkaz na aplikaci:** https://kurisomaki.github.io/VIN/
 
 ## O projektu
 Tento projekt vznikl v rámci předmětu Výtvarná informatika. Aplikace využívá koncept **Action Painting** a převádí jej do digitálního prostředí. Místo fyzického pohybu ruky je gestem zvuková energie.
