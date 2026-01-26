@@ -1,0 +1,26 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  background-color: #F0EAD6; /* Barva pozadí mimo plátno */
+  overflow: hidden; /* Zabraňuje posuvníkům (scrollbars) */
+}
+
+canvas {
+  display: block;
+}
+
+/* Styl pro tlačítko, které se vytvoří v JS */
+button {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 16px;
+  padding: 10px 20px;
+  background-color: #264D8C;
+  color: white;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+button:hover {
+  background-color: #A63333;
+}
