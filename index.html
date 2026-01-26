@@ -3,17 +3,266 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Screaming Pollock</title>
+    <title>Pollock 51 - Perfect UI</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/addons/p5.sound.min.js"></script>
+    <script src="https://unpkg.com/ml5@0.12.2/dist/ml5.min.js"></script>
     
-    <link rel="stylesheet" href="style.css">
+    <style>
+        /* ZÁKLAD */
+        html, body {
+            margin: 0; padding: 0;
+            background-color: #E6DFCD;
+            overflow: hidden;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        canvas { display: block; }
+
+        /* --- HLAVNÍ PANEL --- */
+        #ui-container {
+            position: absolute;
+            right: 20px;
+            top: 50%; 
+            transform: translateY(-50%);
+            width: 340px;
+            /* Důležité: overflow visible, aby tlačítko trčelo ven */
+            background-color: transparent; 
+            z-index: 50;
+            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        
+        /* Skrytý stav - posune se doprava */
+        #ui-container.collapsed {
+            transform: translate(380px, -50%); 
+        }
+
+        /* VRSTVA PRO OBSAH (Která má pozadí a scrollbar) */
+        .panel-content {
+            background-color: #E6DFCD;
+            border: 3px solid #242754;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: -10px 10px 0px rgba(36, 39, 84, 0.3);
+            max-height: 90vh; /* Maximální výška */
+            overflow-y: auto; /* Scrollbar jen uvnitř */
+        }
+
+        /* TLAČÍTKO MENU (Ouško) */
+        #toggle-btn {
+            position: absolute; 
+            left: -50px; /* Trčí ven doleva */
+            top: 20px; 
+            width: 50px; height: 50px;
+            background: #242754; 
+            color: #E6DFCD;
+            border: none; 
+            border-radius: 10px 0 0 10px;
+            cursor: pointer; 
+            box-shadow: -4px 4px 0px rgba(0,0,0,0.2);
+            /* Centrování */
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; font-weight: bold; padding: 0;
+        }
+        #toggle-btn:hover { background: #3a3e75; }
+
+        /* TLAČÍTKO NÁPOVĚDY (Uvnitř panelu) */
+        #help-btn {
+            position: absolute; top: 14px; left: 25px; /* Pozice uvnitř */
+            width: 30px; height: 30px;
+            background: #A44A28; 
+            color: #E6DFCD; border: 2px solid #242754; 
+            border-radius: 50%; cursor: pointer; z-index: 100;
+            /* Absolutní centrování */
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; font-weight: bold; padding: 0; line-height: 1;
+        }
+
+        /* NADPIS */
+        h2 {
+            margin: 0 0 15px 0;
+            font-size: 22px; text-transform: uppercase; letter-spacing: 2px;
+            color: #242754; text-align: center; border-bottom: 2px solid #CA762E; padding-bottom: 8px;
+            padding-left: 20px; /* Aby se text nebil s otazníkem */
+        }
+
+        /* SEKCIOVÉ NADPISY */
+        .section-title {
+            font-size: 17px; font-weight: 900; color: #CA762E;
+            text-transform: uppercase; margin-top: 15px; margin-bottom: 8px;
+            border-bottom: 1px solid #A4A2AD; display: block;
+        }
+
+        /* GRAF */
+        #visualizer-wrapper {
+            width: 100%; height: 180px; 
+            background-color: #1F1724; 
+            border: 2px solid #CA762E; border-radius: 6px;
+            margin-top: 5px; overflow: hidden;
+        }
+        #vis-canvas { width: 100%; height: 100%; }
+        
+        .info-text { display: flex; justify-content: space-between; font-size: 15px; font-weight: bold; color: #242754; margin-top: 2px; }
+
+        /* INPUTY A TLAČÍTKA */
+        button { border-radius: 6px; cursor: pointer; font-weight: bold; border: none; text-transform: uppercase; }
+        
+        .mic-off { background-color: #CA762E; color: #fff; width: 100%; font-size: 14px; border: 2px solid #242754; padding: 12px; }
+        .action-btn { background-color: #242754; color: #E6DFCD; flex: 1; border: 1px solid #CA762E; padding: 8px; font-size: 12px;}
+        
+        .bg-picker-container { width: 40px; height: 35px; border: 2px solid #242754; border-radius: 4px; overflow: hidden; position: relative;}
+        #bg-color { width: 150%; height: 150%; border: none; padding: 0; margin: -5px; cursor: pointer; }
+        
+        .note-col { border: 2px solid #1F1724; border-radius: 4px; cursor: pointer; width: 100%; height: 30px; padding: 0; display:block;}
+        select { flex: 1; padding: 8px; border: 2px solid #242754; background: #fff; font-weight: bold; font-size:12px; border-radius: 6px;}
+
+        /* SLIDERY */
+        input[type=range] { width: 100%; accent-color: #CA762E; margin: 5px 0 8px 0; height: 6px; }
+        label { font-size: 12px; font-weight: bold; color: #1F1724; display: block; }
+
+        .control-group { margin-bottom: 10px; }
+        
+        /* --- NÁPOVĚDA --- */
+        #help-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 150; backdrop-filter: blur(2px); }
+        #help-modal {
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: #1F1724; color: #E6DFCD; padding: 30px; border-radius: 12px; border: 3px solid #CA762E;
+            z-index: 200; width: 350px; box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+        }
+        #help-modal h2 { color: #E7AC2A; border-bottom: 1px solid #555; margin-top:0; padding-bottom:10px;}
+        .key-badge { background: #CA762E; color: #fff; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-right: 10px; font-size: 11px;}
+        .param-title { color: #A4A2AD; font-weight: bold; display: block; margin-top: 12px; font-size: 12px; text-decoration: underline;}
+        .param-desc { font-size: 12px; color: #ccc; margin-bottom: 2px; line-height: 1.3;}
+        .shortcut-row { margin-bottom: 8px; font-size: 13px; }
+
+    </style>
 </head>
 <body>
-    <main>
-        </main>
-    
+
+    <div id="help-overlay" onclick="toggleHelp()"></div>
+
+    <div id="help-modal">
+        <h2>JAK NA TO?</h2>
+        <div class="shortcut-row"><span class="key-badge">MEZERNÍK</span> Start / Pauza</div>
+        <div class="shortcut-row"><span class="key-badge">C</span> Smazat celé plátno</div>
+        <div class="shortcut-row"><span class="key-badge">S</span> Uložit obrázek</div>
+        
+        <h3 style="margin-top:25px; color:#E7AC2A; border-bottom:1px solid #555; padding-bottom:5px; font-size:14px;">VYSVĚTLENÍ PARAMETRŮ</h3>
+        <div class="param-title">CITLIVOST (GAIN)</div><div class="param-desc">Zesiluje mikrofon.</div>
+        <div class="param-title">RYCHLOST</div><div class="param-desc">Síla motoru štětce.</div>
+        <div class="param-title">CHAOS (SMĚR)</div><div class="param-desc">0% = Hladké křivky. 100% = Divoké kličkování.</div>
+        <div class="param-title">VISKOZITA</div><div class="param-desc">Odpor. Nízká = Voda. Vysoká = Med.</div>
+        <p style="font-size:10px; color:#666; text-align:center; margin-top:20px; cursor:pointer;" onclick="toggleHelp()">(Klikni kamkoliv pro zavření)</p>
+    </div>
+
+    <div id="ui-container">
+        <button id="toggle-btn" onclick="togglePanel()">☰</button>
+        
+        <div class="panel-content">
+            <button id="help-btn" onclick="toggleHelp()">?</button>
+            
+            <h2>POLLOCK 50</h2>
+
+            <div class="control-group">
+                <button id="start-btn" class="mic-off" onclick="toggleMic()">▶ START (KLIKNI)</button>
+                <p id="status" style="font-size: 12px; text-align: center; color: #555; margin:3px 0;">Klikni pro start...</p>
+            </div>
+            
+            <div class="control-group">
+                <div id="visualizer-wrapper">
+                    <canvas id="vis-canvas" width="320" height="180"></canvas>
+                </div>
+                <div class="info-text">
+                    <span id="note-display">--</span>
+                    <span id="freq-display">0 Hz</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <span class="section-title">1. BARVY & POZADÍ</span>
+                
+                <div style="display:flex; gap:5px; margin-bottom: 5px;">
+                    <button class="action-btn" onclick="randomizePalette()">🎲 NÁHODNÉ BARVY</button>
+                    <button class="action-btn" onclick="randomizeBg()">🎲 NÁHODNÉ POZADÍ</button>
+                </div>
+                
+                <div style="display:flex; gap:8px; margin-bottom: 8px; align-items: center;">
+                    <select id="palette-select" onchange="changePalette()">
+                        <option value="pollock">POLLOCK ORIGINAL</option>
+                        <option value="autumn">PODZIM</option>
+                        <option value="spring">JARO</option>
+                        <option value="neon">CYBERPUNK</option>
+                        <option value="ocean">OCEÁN</option>
+                        <option value="custom">-- VLASTNÍ --</option>
+                    </select>
+                    <div class="bg-picker-container" title="Změnit pozadí">
+                        <input type="color" id="bg-color" value="#E6DFCD" oninput="updateBackground()">
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; gap: 2px;">
+                    <!-- span = bold -->
+                    <div style="flex:1; text-align:center;"><input type="color" class="note-col" id="col-C" value="#E6DFCD"><span style="font-size:12px;font-weight:bold;">C</span></div>
+                    <div style="flex:1; text-align:center;"><input type="color" class="note-col" id="col-D" value="#A4A2AD"><span style="font-size:12px;font-weight:bold;">D</span></div>
+                    <div style="flex:1; text-align:center;"><input type="color" class="note-col" id="col-E" value="#CA762E"><span style="font-size:12px;font-weight:bold;">E</span></div>
+                    <div style="flex:1; text-align:center;"><input type="color" class="note-col" id="col-F" value="#A44A28"><span style="font-size:12px;font-weight:bold;">F</span></div>
+                    <div style="flex:1; text-align:center;"><input type="color" class="note-col" id="col-G" value="#E7AC2A"><span style="font-size:12px;font-weight:bold;">G</span></div>
+                    <div style="flex:1; text-align:center;"><input type="color" class="note-col" id="col-A" value="#242754"><span style="font-size:12px;font-weight:bold;">A</span></div>
+                    <div style="flex:1; text-align:center;"><input type="color" class="note-col" id="col-B" value="#1F1724"><span style="font-size:12px;font-weight:bold;">B</span></div>
+                </div>
+                
+                <div style="margin-top: 5px;">
+                    <label>SYTOST (KRYTÍ)</label>
+                    <input type="range" id="alpha-slider" min="10" max="255" value="200">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <span class="section-title">2. FYZIKA</span>
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex:1"><label>CITLIVOST</label><input type="range" id="gain-slider" min="1" max="50" value="15" step="0.5"></div>
+                    <div style="flex:1"><label>RYCHLOST</label><input type="range" id="speed-slider" min="1" max="150" value="60"></div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex:1"><label>CHAOS</label><input type="range" id="chaos-slider" min="0" max="100" value="30"></div>
+                    <div style="flex:1"><label>VISKOZITA</label><input type="range" id="friction-slider" min="0" max="100" value="40"></div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex:1"><label>MIN ŠÍŘKA</label><input type="range" id="min-width" min="1" max="20" value="3"></div>
+                    <div style="flex:1"><label>MAX ŠÍŘKA</label><input type="range" id="max-width" min="10" max="200" value="70"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <main></main>
     <script src="sketch.js"></script>
+    <script>
+        function togglePanel(){
+            const panel = document.getElementById('ui-container');
+            const btn = document.getElementById('toggle-btn');
+            
+            panel.classList.toggle('collapsed');
+            
+            // Změna ikony
+            if (panel.classList.contains('collapsed')) {
+                btn.innerHTML = "☰"; // Menu hamburger
+            } else {
+                btn.innerHTML = "✕"; // Křížek
+            }
+        }
+        
+        function toggleHelp(){
+            let m = document.getElementById('help-modal');
+            let o = document.getElementById('help-overlay');
+            if (m.style.display === 'block') {
+                m.style.display = 'none';
+                o.style.display = 'none';
+            } else {
+                m.style.display = 'block';
+                o.style.display = 'block';
+            }
+        }
+    </script>
 </body>
 </html>
