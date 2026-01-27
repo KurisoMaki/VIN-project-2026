@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voice Canvas - POLLOCK</title>
+    <title>Voice Canvas - KANDINSKY</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/addons/p5.sound.min.js"></script>
@@ -21,7 +21,7 @@
         #help-btn { position: absolute; top: 10px; left: 10px; width: 28px; height: 28px; background: #A44A28; color: #E6DFCD; border: 2px solid #242754; border-radius: 50%; cursor: pointer; font-weight: bold; padding: 0; display:flex; align-items:center; justify-content:center; font-size: 18px; }
 
         h2 { margin: 0 0 5px 0; font-size: 25px; letter-spacing: 2px; color: #242754; text-align: center; border-bottom: 2px solid #CA762E; padding-bottom: 5px; line-height: 1.2; }
-        .section-title { font-size: 16px; font-weight: 900; color: #CA762E; margin-top: 15px; margin-bottom: 5px; border-bottom: 1px solid #A4A2AD; display: block; }
+        .section-title { font-size: 18px; font-weight: 900; color: #CA762E; margin-top: 15px; margin-bottom: 5px; border-bottom: 1px solid #A4A2AD; display: block; }
 
         #visualizer-wrapper { width: 100%; height: 150px; background-color: #1F1724; border: 2px solid #CA762E; border-radius: 6px; margin-top: 2px; overflow: hidden; }
         #vis-canvas { width: 100%; height: 100%; }
@@ -29,21 +29,24 @@
         .info-text { display: flex; justify-content: space-between; font-size: 14px; font-weight: bold; color: #242754; margin-top: 2px; }
 
         button { border-radius: 5px; cursor: pointer; font-weight: bold; border: none; text-transform: uppercase; }
-        .mic-off { background-color: #CA762E; color: #fff; width: 100%; font-size: 18px; border: 2px solid #242754; padding: 10px; }
+        .mic-off { background-color: #CA762E; color: #fff; width: 100%; font-size: 17px; border: 2px solid #242754; padding: 10px; }
         .action-btn { background-color: #242754; color: #E6DFCD; flex: 1; border: 1px solid #CA762E; padding: 8px; font-size: 13px; }
         .mode-switch-btn { width: 100%; background: #242754; color: white; padding: 12px; margin-bottom: 5px; border: 2px solid #CA762E; font-size: 16px; cursor: pointer; font-weight: bold; }
 
-        .bg-picker-container { width: 45px; height: 35px; border: 2px solid #242754; border-radius: 4px; overflow: hidden; position: relative;}
-        #bg-color { width: 150%; height: 150%; border: none; padding: 0; margin: -5px; cursor: pointer; }
-        .note-col { border: 2px solid #1F1724; border-radius: 4px; cursor: pointer; width: 100%; height: 28px; padding: 0; display:block;}
-        select { flex: 1; padding: 6px; border: 2px solid #242754; background: #fff; font-weight: bold; font-size: 15px; border-radius: 5px;}
+        .note-row { display: flex; align-items: center; gap: 5px; margin-bottom: 4px; }
+        .note-label { font-weight: bold; font-size: 16px; width: 20px; text-align: center; color: #242754; }
+        .note-col { width: 40px; height: 30px; border: 2px solid #1F1724; border-radius: 4px; cursor: pointer; padding: 0; }
+        .shape-select { flex: 1; padding: 4px; border: 1px solid #242754; background: #fff; font-size: 13px; border-radius: 4px; font-weight:bold;}
+
         input[type=range] { width: 100%; accent-color: #CA762E; margin: 3px 0 5px 0; height: 6px; }
         label { font-size: 13px; font-weight: bold; color: #1F1724; display: block; }
-        .control-group { margin-bottom: 8px; }
+        .bg-picker-container { width: 45px; height: 35px; border: 2px solid #242754; border-radius: 4px; overflow: hidden; position: relative;}
+        #bg-color { width: 150%; height: 150%; border: none; padding: 0; margin: -5px; cursor: pointer; }
+        select { flex: 1; padding: 6px; border: 2px solid #242754; background: #fff; font-weight: bold; font-size: 15px; border-radius: 5px;}
 
         /* MODALS */
         #help-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 150; backdrop-filter: blur(2px); }
-        #help-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1F1724; color: #E6DFCD; padding: 25px; border-radius: 12px; border: 3px solid #CA762E; z-index: 200; width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.9); max-height: 90vh; overflow-y: auto;}
+        #help-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1F1724; color: #E6DFCD; padding: 25px; border-radius: 12px; border: 3px solid #CA762E; z-index: 200; width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.9); max-height:90vh; overflow-y:auto; }
         #help-modal h2 { color: #E7AC2A; border-bottom: 1px solid #555; margin-top:0; font-size: 23px; }
         .param-title { color: #A4A2AD; font-weight: bold; display: block; margin-top: 10px; font-size: 15px; text-decoration: underline; }
         .param-desc { font-size: 14px; color: #ccc; margin-bottom: 2px; }
@@ -70,11 +73,11 @@
         </p>
         
         <div style="margin-bottom:15px; border-bottom:1px solid #555; padding-bottom:10px;">
-            <div class="param-title" style="color:#E7AC2A; margin-top:0;">🎨 PAINTING WITH SOUND</div>
-            <div class="param-desc"><b>Loudness</b> = Brush Size. <br><b>Pitch</b> = Color.</div>
+            <div class="param-title" style="color:#E7AC2A; margin-top:0;">🎤 GEOMETRY OF SOUND</div>
+            <div class="param-desc"><b>Loudness</b> = Size. <br><b>Pitch</b> = Shape & Color.</div>
             
             <div class="param-title" style="color:#E7AC2A;">🎵 WHAT IS C, D, E...?</div>
-            <div class="param-desc">These are <b>Musical Notes</b>. The AI detects the pitch of your voice. Low notes (like C) pick one color, high notes (like B) pick another.</div>
+            <div class="param-desc">These are <b>Musical Notes</b>. Each note triggers a specific Shape and Color (e.g. C = Blue Circle).</div>
         </div>
 
         <div style="margin-bottom:15px; border-bottom:1px solid #555; padding-bottom:10px;">
@@ -82,17 +85,20 @@
             <div style="margin-bottom:5px;"><span class="key-badge">S</span> Save Image</div>
             <div style="margin-bottom:5px;"><span class="key-badge">C</span> Clear Canvas</div>
         </div>
-        
+
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
             <div>
-                <div class="param-title">SENSITIVITY</div><div class="param-desc">Mic gain.</div>
-                <div class="param-title">OPACITY</div><div class="param-desc">Transparency.</div>
-                <div class="param-title">SPEED</div><div class="param-desc">Brush velocity.</div>
+                <div class="param-title">SENSITIVITY</div><div class="param-desc">Mic input gain.</div>
+                <div class="param-title">OPACITY</div><div class="param-desc">Transparency of shapes.</div>
+                <div class="param-title">MIN/MAX SIZE</div><div class="param-desc">Size range based on volume.</div>
+                <div class="param-title">CHAOS</div><div class="param-desc">Position randomness.</div>
             </div>
             <div>
-                <div class="param-title">CHAOS</div><div class="param-desc">Line jitter.</div>
-                <div class="param-title">VISCOSITY</div><div class="param-desc">Drag/Friction.</div>
-                <div class="param-title">PITCH GRAVITY</div><div class="param-desc">Notes pull up/down.</div>
+                <div class="param-title">AURA %</div><div class="param-desc">Chance for soft shadow.</div>
+                <div class="param-title">LINES %</div><div class="param-desc">Geometric black lines.</div>
+                <div class="param-title">OUTLINE %</div><div class="param-desc">Contrasting border.</div>
+                <div class="param-title">NO FILL %</div><div class="param-desc">Wireframe mode only.</div>
+                <div class="param-title">HALF %</div><div class="param-desc">Semicircles (Arcs).</div>
             </div>
         </div>
         <p style="font-size:13px; color:#666; text-align:center; margin-top:15px; cursor:pointer;" onclick="closeAllModals()">(Click anywhere to close)</p>
@@ -109,14 +115,13 @@
 
     <div id="ui-container">
         <button id="toggle-btn" onclick="togglePanel()">☰</button>
-        
         <div class="panel-content">
             <button id="help-btn" onclick="toggleHelp()">?</button>
-
+            
             <h2>AUDIO<br>IMPROVISATION</h2>
-            <h3 style="text-align:center; font-size:16px; margin-top:-5px; color:#555;">POLLOCK MODE</h3>
-
-            <button class="mode-switch-btn" onclick="window.location.href='kandinsky.html'">➔ SWITCH TO KANDINSKY</button>
+            <h3 style="text-align:center; font-size:16px; margin-top:-5px; color:#555;">KANDINSKY MODE</h3>
+            
+            <button class="mode-switch-btn" onclick="window.location.href='index.html'">➔ SWITCH TO POLLOCK</button>
 
             <div class="control-group">
                 <button id="start-btn" class="mic-off" onclick="toggleMic()">▶ START</button>
@@ -134,69 +139,67 @@
             </div>
 
             <div class="control-group">
-                <span class="section-title">1. COLORS & BACKGROUND</span>
+                <span class="section-title">1. COLORS & SHAPES</span>
                 <div style="display:flex; gap:5px; margin-bottom: 5px;">
-                    <button class="action-btn" onclick="randomizePalette()">🎲 RANDOM COLORS</button>
-                    <button class="action-btn" onclick="randomizeBg()">🎲 RANDOM BG</button>
+                    <button class="action-btn" onclick="randomizePalette()">🎲 RANDOM</button>
+                    <button class="action-btn" onclick="randomizeBg()">🎲 BG</button>
                 </div>
                 <div style="display:flex; gap:8px; margin-bottom: 8px; align-items: center;">
                     <select id="palette-select" onchange="changePalette()">
-                        <option value="pollock">POLLOCK ORIGINAL</option>
+                        <option value="kandinsky_true">TRUE KANDINSKY</option>
                         <option value="rainbow">RAINBOW</option> 
-                        <option value="autumn">AUTUMN</option>
-                        <option value="spring">SPRING</option>
+                        <option value="pollock">POLLOCK</option>
                         <option value="neon">CYBERPUNK</option>
+                        <option value="autumn">AUTUMN</option>
                         <option value="ocean">OCEAN</option>
-                        <option value="custom">-- CUSTOM --</option>
                     </select>
                     <div class="bg-picker-container" title="Change Background">
                         <input type="color" id="bg-color" value="#E6DFCD" oninput="updateBackground()">
                     </div>
                 </div>
-                <div style="display: flex; justify-content: space-between; gap: 2px;">
-                    <div style="flex:1; text-align:center;"><input type="color" class="note-col" id="col-C" value="#E6DFCD"><span style="font-size:14px;font-weight:bold;">C</span></div>
-                    <div style="flex:1; text-align:center;"><input type="color" class="note-col" id="col-D" value="#A4A2AD"><span style="font-size:14px;font-weight:bold;">D</span></div>
-                    <div style="flex:1; text-align:center;"><input type="color" class="note-col" id="col-E" value="#CA762E"><span style="font-size:14px;font-weight:bold;">E</span></div>
-                    <div style="flex:1; text-align:center;"><input type="color" class="note-col" id="col-F" value="#A44A28"><span style="font-size:14px;font-weight:bold;">F</span></div>
-                    <div style="flex:1; text-align:center;"><input type="color" class="note-col" id="col-G" value="#E7AC2A"><span style="font-size:14px;font-weight:bold;">G</span></div>
-                    <div style="flex:1; text-align:center;"><input type="color" class="note-col" id="col-A" value="#242754"><span style="font-size:14px;font-weight:bold;">A</span></div>
-                    <div style="flex:1; text-align:center;"><input type="color" class="note-col" id="col-B" value="#1F1724"><span style="font-size:14px;font-weight:bold;">B</span></div>
-                </div>
-                <div style="margin-top: 5px;">
-                    <label>OPACITY (ALPHA)</label>
-                    <input type="range" id="alpha-slider" min="10" max="255" value="255">
-                </div>
+                
+                <div class="note-row"><span class="note-label">C</span><input type="color" class="note-col" id="col-C" value="#0000FF"><select class="shape-select" id="shape-C"><option value="circle" selected>Circle</option><option value="rect">Rectangle</option><option value="triangle">Triangle</option><option value="line">Line</option><option value="spiral">Spiral</option></select></div>
+                <div class="note-row"><span class="note-label">D</span><input type="color" class="note-col" id="col-D" value="#FF0000"><select class="shape-select" id="shape-D"><option value="rect" selected>Rectangle</option><option value="circle">Circle</option><option value="triangle">Triangle</option><option value="line">Line</option><option value="spiral">Spiral</option></select></div>
+                <div class="note-row"><span class="note-label">E</span><input type="color" class="note-col" id="col-E" value="#FFD700"><select class="shape-select" id="shape-E"><option value="triangle" selected>Triangle</option><option value="circle">Circle</option><option value="rect">Rectangle</option><option value="line">Line</option><option value="spiral">Spiral</option></select></div>
+                <div class="note-row"><span class="note-label">F</span><input type="color" class="note-col" id="col-F" value="#000000"><select class="shape-select" id="shape-F"><option value="line" selected>Line</option><option value="circle">Circle</option><option value="rect">Rectangle</option><option value="triangle">Triangle</option><option value="spiral">Spiral</option></select></div>
+                <div class="note-row"><span class="note-label">G</span><input type="color" class="note-col" id="col-G" value="#FFFFFF"><select class="shape-select" id="shape-G"><option value="spiral" selected>Spiral</option><option value="circle">Circle</option><option value="rect">Rectangle</option><option value="triangle">Triangle</option><option value="line">Line</option></select></div>
+                <div class="note-row"><span class="note-label">A</span><input type="color" class="note-col" id="col-A" value="#FFA500"><select class="shape-select" id="shape-A"><option value="triangle" selected>Triangle</option><option value="circle">Circle</option><option value="rect">Rectangle</option><option value="line">Line</option><option value="spiral">Spiral</option></select></div>
+                <div class="note-row"><span class="note-label">B</span><input type="color" class="note-col" id="col-B" value="#800080"><select class="shape-select" id="shape-B"><option value="rect" selected>Rectangle</option><option value="circle">Circle</option><option value="triangle">Triangle</option><option value="line">Line</option><option value="spiral">Spiral</option></select></div>
             </div>
 
             <div class="control-group">
-                <span class="section-title">2. PHYSICS</span>
+                <span class="section-title">2. SETTINGS & GEOMETRY</span>
                 <div style="display: flex; gap: 10px;">
                     <div style="flex:1"><label>SENSITIVITY</label><input type="range" id="gain-slider" min="1" max="50" value="15" step="0.5"></div>
-                    <div style="flex:1"><label>SPEED</label><input type="range" id="speed-slider" min="1" max="150" value="60"></div>
-                </div>
-                <div style="display: flex; gap: 10px;">
-                    <div style="flex:1"><label>CHAOS</label><input type="range" id="chaos-slider" min="0" max="100" value="30"></div>
-                    <div style="flex:1"><label>VISCOSITY</label><input type="range" id="friction-slider" min="0" max="100" value="40"></div>
-                </div>
-                <div style="margin-top: 5px;">
-                    <label style="color:#A44A28;">PITCH GRAVITY</label>
-                    <input type="range" id="pitch-gravity-slider" min="0" max="100" value="0">
+                    <div style="flex:1"><label>OPACITY</label><input type="range" id="alpha-slider" min="10" max="255" value="255"></div>
                 </div>
                 <div style="display: flex; gap: 10px; margin-top:5px;">
-                    <div style="flex:1"><label>MIN WIDTH</label><input type="range" id="min-width" min="1" max="20" value="1"></div>
-                    <div style="flex:1"><label>MAX WIDTH</label><input type="range" id="max-width" min="10" max="200" value="70"></div>
+                    <div style="flex:1"><label>MIN SIZE</label><input type="range" id="min-width" min="5" max="50" value="5"></div>
+                    <div style="flex:1"><label>MAX SIZE</label><input type="range" id="max-width" min="50" max="400" value="250"></div>
+                </div>
+                
+                <div style="margin-top: 8px; display:flex; gap:10px;">
+                    <div style="flex:1"><label style="color:#A44A28;">CHAOS</label><input type="range" id="chaos-slider" min="0" max="100" value="80"></div>
+                    <div style="flex:1"><label style="color:#242754;">AURA %</label><input type="range" id="aura-slider" min="0" max="100" value="30"></div>
+                </div>
+                <div style="margin-top: 5px; display:flex; gap:10px;">
+                    <div style="flex:1"><label style="color:#242754;">LINES %</label><input type="range" id="lines-slider" min="0" max="100" value="30"></div>
+                    <div style="flex:1"><label style="color:#A44A28;">OUTLINE %</label><input type="range" id="outline-slider" min="0" max="100" value="30"></div>
+                </div>
+                <div style="margin-top: 5px; display:flex; gap:10px;">
+                    <div style="flex:1"><label style="color:#242754;">NO FILL %</label><input type="range" id="nofill-slider" min="0" max="100" value="20"></div>
+                    <div style="flex:1"><label style="color:#242754;">HALF %</label><input type="range" id="half-slider" min="0" max="100" value="20"></div>
                 </div>
             </div>
-
+            
             <div class="control-group">
                  <button class="action-btn" style="width:100%; margin-top:10px;" onclick="askConfirm('save')">SAVE IMAGE (S)</button>
                  <button class="action-btn" style="width:100%; margin-top:5px; background:#A44A28;" onclick="askConfirm('clear')">CLEAR CANVAS (C)</button>
             </div>
         </div>
     </div>
-
     <main></main>
-    <script src="sketch_pollock.js"></script>
+    <script src="sketch_kandinsky.js"></script>
     <script>
         function togglePanel(){ document.getElementById('ui-container').classList.toggle('collapsed'); }
         function toggleHelp(){ document.getElementById('help-modal').style.display = 'block'; document.getElementById('help-overlay').style.display = 'block'; }

@@ -1,4 +1,4 @@
-// VOICE CANVAS 61.0 - ENGLISH
+// VOICE CANVAS 61.0 - ENGLISH (FIXED BUTTONS)
 // Author: [Your Name]
 
 let audioContext, mic, pitch;
@@ -16,7 +16,7 @@ let silenceTimer = 0;
 let ui = {};
 let visCtx;
 let visCanvas;
-let pendingAction = null; 
+let pendingAction = null; // Proměnná pro modal okno
 
 const NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 const PALETTES = {
@@ -36,6 +36,7 @@ function setup() {
   restoreDrawing();
   setInterval(saveToLocalStorage, 2000);
 
+  // Bezpečnější výběr prvků (čistý JS nebo p5 select)
   ui.bg = select('#bg-color');
   ui.gain = select('#gain-slider');
   ui.speed = select('#speed-slider');
@@ -50,7 +51,9 @@ function setup() {
   ui.colors = {};
   NOTES.forEach(n => {
       let clean = n.replace("#", "");
-      if(!ui.colors[clean]) ui.colors[clean] = select(`#col-${clean}`);
+      // Použijeme select, ale s ošetřením, kdyby prvek neexistoval
+      let el = select(`#col-${clean}`);
+      if(el) ui.colors[clean] = el;
   });
 
   loadConfig();
@@ -214,7 +217,9 @@ function saveConfig() {
         colors: {}
     };
     let keys = ["C", "D", "E", "F", "G", "A", "B"];
-    keys.forEach(k => { config.colors[k] = ui.colors[k].value(); });
+    keys.forEach(k => { 
+        if(ui.colors[k]) config.colors[k] = ui.colors[k].value(); 
+    });
     localStorage.setItem('voice_canvas_config', JSON.stringify(config));
 }
 
@@ -223,16 +228,16 @@ function loadConfig() {
     if (!raw) return;
     try {
         let c = JSON.parse(raw);
-        ui.gain.value(c.gain);
-        ui.speed.value(c.speed);
-        ui.chaos.value(c.chaos);
-        ui.friction.value(c.friction);
+        if(c.gain) ui.gain.value(c.gain);
+        if(c.speed) ui.speed.value(c.speed);
+        if(c.chaos) ui.chaos.value(c.chaos);
+        if(c.friction) ui.friction.value(c.friction);
         if(c.gravity) ui.gravity.value(c.gravity);
-        ui.alpha.value(c.alpha);
-        ui.minW.value(c.minW);
-        ui.maxW.value(c.maxW);
-        ui.bg.value(c.bg);
-        ui.palette.value(c.paletteIdx);
+        if(c.alpha) ui.alpha.value(c.alpha);
+        if(c.minW) ui.minW.value(c.minW);
+        if(c.maxW) ui.maxW.value(c.maxW);
+        if(c.bg) ui.bg.value(c.bg);
+        if(c.paletteIdx) ui.palette.value(c.paletteIdx);
         if (c.colors) {
             for (let k in c.colors) { if (ui.colors[k]) ui.colors[k].value(c.colors[k]); }
         }
@@ -251,31 +256,52 @@ function restoreDrawing() {
         loadImage(savedData, (img) => { pg.image(img, 0, 0, width, height); });
     }
 }
+
+// --- FUNKCE PRO TLAČÍTKA (PŘIDÁNO) ---
 function askConfirm(action) {
     let title = select('#confirm-title');
-    let text = select('#confirm-text');
+    let text = select('#confirm-text'); // V HTML má být id="confirm-text" nebo jen p
     let modal = select('#confirm-modal');
     let overlay = select('#help-overlay');
+    
+    // Pokud používáme select(), musíme zajistit, že prvky existují
+    if (!title || !modal || !overlay) return;
+
     pendingAction = action;
-    if (action === 'clear') { title.html('CLEAR CANVAS'); text.html('Delete the entire artwork?'); } 
-    else if (action === 'save') { title.html('SAVE IMAGE'); text.html('Download PNG?'); }
-    modal.style('display', 'block'); overlay.style('display', 'block');
+    if (action === 'clear') { 
+        title.html('CLEAR CANVAS'); 
+        // Pokud text element existuje, nastavíme ho
+        if(text) text.html('Delete the entire artwork?'); 
+    } 
+    else if (action === 'save') { 
+        title.html('SAVE IMAGE'); 
+        if(text) text.html('Download PNG?'); 
+    }
+    modal.style('display', 'block'); 
+    overlay.style('display', 'block');
 }
+
 function performConfirmedAction() {
     if (pendingAction === 'clear') { clearLayer(); } 
     else if (pendingAction === 'save') { saveArt(); }
     closeAllModals();
 }
+
 function closeAllModals() {
-    select('#help-modal').style('display', 'none');
-    select('#confirm-modal').style('display', 'none');
-    select('#help-overlay').style('display', 'none');
+    let hm = select('#help-modal');
+    let cm = select('#confirm-modal');
+    let ho = select('#help-overlay');
+    if(hm) hm.style('display', 'none');
+    if(cm) cm.style('display', 'none');
+    if(ho) ho.style('display', 'none');
 }
+
 function keyPressed() { 
     if (key === 'c' || key === 'C') { askConfirm('clear'); } 
     if (key === 's' || key === 'S') { askConfirm('save'); } 
     if (key === ' ') { toggleMic(); return false; } 
 }
+
 function toggleMic() {
     if (!isModelReady && !isRunning) {
         userStartAudio().then(() => { select('#status').html("Starting..."); startPitchDetection(); }); return;
@@ -285,12 +311,14 @@ function toggleMic() {
     if (isRunning) { btn.html("⏸ PAUSE"); btn.style('background-color', '#A44A28'); getAudioContext().resume(); } 
     else { btn.html("▶ RESUME"); btn.style('background-color', '#242754'); }
 }
+
 function startPitchDetection() {
   mic.start(() => {
       const modelUrl = 'https://cdn.jsdelivr.net/gh/ml5js/ml5-data-and-models/models/pitch-detection/crepe/';
       pitch = ml5.pitchDetection(modelUrl, getAudioContext(), mic.stream, modelLoaded);
   });
 }
+
 function modelLoaded() {
   isModelReady = true; isRunning = true;
   select('#status').html("Ready!");
@@ -298,12 +326,14 @@ function modelLoaded() {
   select('#start-btn').style('background-color', '#A44A28');
   getPitch();
 }
+
 function getPitch() {
   pitch.getPitch(function(err, frequency) {
     if (frequency) { currentFreq = frequency; currentNote = midiToNoteName(freqToMidi(frequency)); } else { currentFreq = 0; }
     if (isModelReady) getPitch();
   });
 }
+
 function updateGraph(freq, vol) {
     if (!visCtx) return;
     let w = visCanvas.width;
@@ -324,7 +354,10 @@ function updateGraph(freq, vol) {
         let cleanName = noteName.replace(/[0-9-]/g, ''); 
         let isSharp = cleanName.includes("#");
         let baseName = cleanName.replace("#", "");
-        let hexColor = ui.colors[baseName].value();
+        
+        let hexColor = '#555';
+        if(ui.colors[baseName]) hexColor = ui.colors[baseName].value();
+        
         visCtx.beginPath();
         if (baseName === "C" && !isSharp) {
             visCtx.strokeStyle = hexColor; visCtx.globalAlpha = 0.6; visCtx.lineWidth = 1; visCtx.moveTo(0, y); visCtx.lineTo(w, y);
@@ -358,9 +391,21 @@ function randomizeBg() { let r = random(1)>0.5?random(20,50):random(200,250); le
 function randomizePalette() { let keys = ["C","D","E","F","G","A","B"]; keys.forEach(k => { let r=floor(random(255)); let g=floor(random(255)); let b=floor(random(255)); ui.colors[k].value('#'+hex(r,2)+hex(g,2)+hex(b,2)); }); saveConfig(); }
 function changePalette() { let key = ui.palette.value(); if (key === 'custom') return; let colors = PALETTES[key]; if (!colors) return; let noteKeys = ["C", "D", "E", "F", "G", "A", "B"]; for(let i=0; i<7; i++) { if (ui.colors[noteKeys[i]]) ui.colors[noteKeys[i]].value(colors[i]); } saveConfig(); }
 function updateBackground() { saveConfig(); }
-function getMixedColor(note) { if (note === "--") return color(50); let noteBase = note.replace(/[0-9-]/g, ''); let isSharp = noteBase.includes("#"); let cleanNote = noteBase.replace("#", ""); let c1 = color(ui.colors[cleanNote].value()); if (!isSharp) return c1; else { let wholeNotes = ["C", "D", "E", "F", "G", "A", "B"]; let idx = wholeNotes.indexOf(cleanNote); let nextNote = wholeNotes[(idx + 1) % 7]; let c2 = color(ui.colors[nextNote].value()); return lerpColor(c1, c2, 0.5); } }
+function getMixedColor(note) { if (note === "--") return color(50); let noteBase = note.replace(/[0-9-]/g, ''); let isSharp = noteBase.includes("#"); let cleanNote = noteBase.replace("#", ""); 
+    // Pojistka, kdyby barva nebyla načtená
+    if(!ui.colors[cleanNote]) return color(100); 
+    let c1 = color(ui.colors[cleanNote].value()); 
+    if (!isSharp) return c1; 
+    else { 
+        let wholeNotes = ["C", "D", "E", "F", "G", "A", "B"]; 
+        let idx = wholeNotes.indexOf(cleanNote); 
+        let nextNote = wholeNotes[(idx + 1) % 7]; 
+        let c2 = color(ui.colors[nextNote].value()); 
+        return lerpColor(c1, c2, 0.5); 
+    } 
+}
 function freqToMidi(f) { return Math.round(69 + 12 * Math.log2(f / 440)); }
 function midiToNoteName(midi) { let notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]; let octave = Math.floor(midi / 12) - 1; return notes[midi % 12] + octave; }
 function clearLayer() { pg.clear(); localStorage.removeItem('voice_canvas_autosave'); pos=createVector(width/2,height/2); prevPos=pos.copy(); vel.mult(0); }
-function saveArt() { let finalCanvas = createGraphics(width, height); finalCanvas.background(ui.bg.value()); finalCanvas.image(pg, 0, 0); save(finalCanvas, 'voice_canvas_art.png'); }
+function saveArt() { let finalCanvas = createGraphics(width, height); finalCanvas.background(ui.bg.value()); finalCanvas.image(pg, 0, 0); save(finalCanvas, 'pollock_art.png'); }
 function windowResized() { resizeCanvas(windowWidth, windowHeight); let oldPg = pg; pg = createGraphics(windowWidth, windowHeight); pg.image(oldPg, 0, 0); }
