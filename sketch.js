@@ -1,5 +1,5 @@
-// SCREAMING POLLOCK 50.0 - FIXED
-// Autor: [Tvé Jméno]
+// VOICE CANVAS 61.0 - ENGLISH
+// Author: [Your Name]
 
 let audioContext, mic, pitch;
 let isModelReady = false;
@@ -16,10 +16,12 @@ let silenceTimer = 0;
 let ui = {};
 let visCtx;
 let visCanvas;
+let pendingAction = null; 
 
 const NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 const PALETTES = {
     'pollock': ['#E6DFCD', '#A4A2AD', '#CA762E', '#A44A28', '#E7AC2A', '#242754', '#1F1724'],
+    'rainbow': ['#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#0000FF', '#4B0082', '#9400D3'],
     'autumn':  ['#8B4513', '#D2691E', '#DAA520', '#CD853F', '#800000', '#FF8C00', '#556B2F'],
     'spring':  ['#FFB6C1', '#98FB98', '#87CEFA', '#FFFFE0', '#DDA0DD', '#F0E68C', '#E0FFFF'],
     'neon':    ['#FF00FF', '#00FFFF', '#00FF00', '#FFFF00', '#FF0000', '#7B68EE', '#FF1493'],
@@ -31,11 +33,15 @@ function setup() {
   pg = createGraphics(windowWidth, windowHeight);
   pg.clear();
 
+  restoreDrawing();
+  setInterval(saveToLocalStorage, 2000);
+
   ui.bg = select('#bg-color');
   ui.gain = select('#gain-slider');
   ui.speed = select('#speed-slider');
   ui.chaos = select('#chaos-slider');
   ui.friction = select('#friction-slider');
+  ui.gravity = select('#pitch-gravity-slider');
   ui.alpha = select('#alpha-slider');
   ui.minW = select('#min-width');
   ui.maxW = select('#max-width');
@@ -47,6 +53,9 @@ function setup() {
       if(!ui.colors[clean]) ui.colors[clean] = select(`#col-${clean}`);
   });
 
+  loadConfig();
+  attachSettingsListeners();
+
   visCanvas = document.getElementById('vis-canvas');
   if (visCanvas) visCtx = visCanvas.getContext('2d');
 
@@ -57,9 +66,9 @@ function setup() {
   vel = createVector(0, 0);
   acc = createVector(0, 0);
   
-  for(let i=0; i<320; i++) pitchHistory.push(0);
+  for(let i=0; i<330; i++) pitchHistory.push(0);
   
-  console.log("Verze 50.0 Ready.");
+  console.log("Voice Canvas Ready.");
 }
 
 function draw() {
@@ -79,7 +88,6 @@ function draw() {
       select('#freq-display').html(Math.round(currentFreq) + " Hz");
   }
 
-  // Ticho
   if (vol < 0.05) {
       silenceTimer++;
       if (silenceTimer > 15) { wasSilent = true; vel.mult(0.9); }
@@ -137,13 +145,13 @@ function draw() {
 
 function applyPhysics(vol, freq) {
     let chaosVal = ui.chaos.value();
+    let gravityVal = ui.gravity.value(); 
+    
     let angleChangeSpeed = map(chaosVal, 0, 100, 0.0001, 0.2); 
     let n = noise(pos.x * 0.005, pos.y * 0.005, frameCount * angleChangeSpeed);
     let angle = n * TWO_PI * 4; 
 
-    if (freq > 500) {
-        angle += random(-0.5, 0.5) * (freq/1000);
-    }
+    if (freq > 500) { angle += random(-0.5, 0.5) * (freq/1000); }
 
     let speedVal = ui.speed.value();
     let power = map(vol, 0, 1, 0.5, map(speedVal, 1, 150, 2, 25));
@@ -151,6 +159,19 @@ function applyPhysics(vol, freq) {
     let force = p5.Vector.fromAngle(angle);
     force.mult(power);
     acc.add(force);
+
+    if (gravityVal > 0 && freq > 50) {
+        let m = freqToMidi(freq);
+        let minHuman = 45; 
+        let maxHuman = 75; 
+        let targetY = map(m, minHuman, maxHuman, height - 50, 50);
+        targetY = constrain(targetY, 0, height);
+        let strength = map(gravityVal, 0, 100, 0, 0.8); 
+        let gravityForce = createVector(0, (targetY - pos.y) * strength * 0.1);
+        acc.add(gravityForce);
+        let xWander = (noise(frameCount * 0.1) - 0.5) * map(gravityVal, 0, 100, 0, 10);
+        acc.add(createVector(xWander, 0));
+    }
 
     let border = 100;
     let repulsion = createVector(0, 0);
@@ -170,49 +191,119 @@ function applyPhysics(vol, freq) {
     acc.mult(0);
 }
 
+function attachSettingsListeners() {
+    let allInputs = document.querySelectorAll('input, select');
+    allInputs.forEach(el => {
+        el.addEventListener('input', saveConfig);
+        el.addEventListener('change', saveConfig);
+    });
+}
+
+function saveConfig() {
+    let config = {
+        gain: ui.gain.value(),
+        speed: ui.speed.value(),
+        chaos: ui.chaos.value(),
+        friction: ui.friction.value(),
+        gravity: ui.gravity.value(),
+        alpha: ui.alpha.value(),
+        minW: ui.minW.value(),
+        maxW: ui.maxW.value(),
+        bg: ui.bg.value(),
+        paletteIdx: ui.palette.value(),
+        colors: {}
+    };
+    let keys = ["C", "D", "E", "F", "G", "A", "B"];
+    keys.forEach(k => { config.colors[k] = ui.colors[k].value(); });
+    localStorage.setItem('voice_canvas_config', JSON.stringify(config));
+}
+
+function loadConfig() {
+    let raw = localStorage.getItem('voice_canvas_config');
+    if (!raw) return;
+    try {
+        let c = JSON.parse(raw);
+        ui.gain.value(c.gain);
+        ui.speed.value(c.speed);
+        ui.chaos.value(c.chaos);
+        ui.friction.value(c.friction);
+        if(c.gravity) ui.gravity.value(c.gravity);
+        ui.alpha.value(c.alpha);
+        ui.minW.value(c.minW);
+        ui.maxW.value(c.maxW);
+        ui.bg.value(c.bg);
+        ui.palette.value(c.paletteIdx);
+        if (c.colors) {
+            for (let k in c.colors) { if (ui.colors[k]) ui.colors[k].value(c.colors[k]); }
+        }
+    } catch (e) {}
+}
+
+function saveToLocalStorage() {
+    try {
+        let data = pg.canvas.toDataURL();
+        localStorage.setItem('voice_canvas_autosave', data);
+    } catch (e) {}
+}
+function restoreDrawing() {
+    let savedData = localStorage.getItem('voice_canvas_autosave');
+    if (savedData) {
+        loadImage(savedData, (img) => { pg.image(img, 0, 0, width, height); });
+    }
+}
+function askConfirm(action) {
+    let title = select('#confirm-title');
+    let text = select('#confirm-text');
+    let modal = select('#confirm-modal');
+    let overlay = select('#help-overlay');
+    pendingAction = action;
+    if (action === 'clear') { title.html('CLEAR CANVAS'); text.html('Delete the entire artwork?'); } 
+    else if (action === 'save') { title.html('SAVE IMAGE'); text.html('Download PNG?'); }
+    modal.style('display', 'block'); overlay.style('display', 'block');
+}
+function performConfirmedAction() {
+    if (pendingAction === 'clear') { clearLayer(); } 
+    else if (pendingAction === 'save') { saveArt(); }
+    closeAllModals();
+}
+function closeAllModals() {
+    select('#help-modal').style('display', 'none');
+    select('#confirm-modal').style('display', 'none');
+    select('#help-overlay').style('display', 'none');
+}
+function keyPressed() { 
+    if (key === 'c' || key === 'C') { askConfirm('clear'); } 
+    if (key === 's' || key === 'S') { askConfirm('save'); } 
+    if (key === ' ') { toggleMic(); return false; } 
+}
 function toggleMic() {
     if (!isModelReady && !isRunning) {
-        userStartAudio().then(() => {
-            select('#status').html("Startuji...");
-            startPitchDetection(); 
-        });
-        return;
+        userStartAudio().then(() => { select('#status').html("Starting..."); startPitchDetection(); }); return;
     } 
     isRunning = !isRunning;
     let btn = select('#start-btn');
-    let status = select('#status');
-    if (isRunning) { 
-        btn.html("⏸ PAUZA"); btn.style('background-color', '#A44A28'); 
-        status.html("Naslouchám..."); getAudioContext().resume(); 
-    } else { 
-        btn.html("▶ POKRAČOVAT"); btn.style('background-color', '#242754'); 
-        status.html("Pozastaveno."); 
-    }
+    if (isRunning) { btn.html("⏸ PAUSE"); btn.style('background-color', '#A44A28'); getAudioContext().resume(); } 
+    else { btn.html("▶ RESUME"); btn.style('background-color', '#242754'); }
 }
-
 function startPitchDetection() {
   mic.start(() => {
-      select('#status').html("Načítám AI...");
       const modelUrl = 'https://cdn.jsdelivr.net/gh/ml5js/ml5-data-and-models/models/pitch-detection/crepe/';
       pitch = ml5.pitchDetection(modelUrl, getAudioContext(), mic.stream, modelLoaded);
   });
 }
-
 function modelLoaded() {
   isModelReady = true; isRunning = true;
-  select('#status').html("Připraveno!");
-  select('#start-btn').html("⏸ PAUZA");
+  select('#status').html("Ready!");
+  select('#start-btn').html("⏸ PAUSE");
   select('#start-btn').style('background-color', '#A44A28');
   getPitch();
 }
-
 function getPitch() {
   pitch.getPitch(function(err, frequency) {
     if (frequency) { currentFreq = frequency; currentNote = midiToNoteName(freqToMidi(frequency)); } else { currentFreq = 0; }
     if (isModelReady) getPitch();
   });
 }
-
 function updateGraph(freq, vol) {
     if (!visCtx) return;
     let w = visCanvas.width;
@@ -224,65 +315,52 @@ function updateGraph(freq, vol) {
     visCtx.fillStyle = '#1F1724'; 
     visCtx.fillRect(0, 0, w, h);
     
-    let minLog = Math.log(65); let maxLog = Math.log(1050);
-    let notes = ["C", "D", "E", "F", "G", "A", "B"];
-    
+    let minMidi = 36; let maxMidi = 83;
     visCtx.textAlign = "left";
 
-    for (let oct = 2; oct <= 5; oct++) {
-        for (let n of notes) {
-             let offsets = {"C":0, "D":2, "E":4, "F":5, "G":7, "A":9, "B":11};
-             let midi = (12 * (oct + 1)) + offsets[n];
-             let f = 440 * Math.pow(2, (midi - 69) / 12);
-             let y = map(Math.log(f), minLog, maxLog, h-10, 10);
-             
-             let hexColor = ui.colors[n].value();
-             
-             visCtx.beginPath(); 
-             
-             if (n === "C") {
-                 visCtx.strokeStyle = hexColor; 
-                 visCtx.globalAlpha = 0.6;
-                 visCtx.lineWidth = 1;
-                 visCtx.moveTo(0, y); visCtx.lineTo(w, y);
-                 
-                 visCtx.globalAlpha = 1.0; 
-                 visCtx.font = "bold 12px monospace";
-                 visCtx.fillStyle = hexColor; 
-                 visCtx.fillText(n + oct, 5, y - 2);
-             } else {
-                 visCtx.strokeStyle = hexColor; 
-                 visCtx.globalAlpha = 0.15;
-                 visCtx.lineWidth = 1;
-                 visCtx.moveTo(0, y); visCtx.lineTo(w, y);
-             }
-             visCtx.stroke();
+    for (let m = minMidi; m <= maxMidi; m++) {
+        let y = map(m, minMidi, maxMidi, h - 10, 10);
+        let noteName = midiToNoteName(m); 
+        let cleanName = noteName.replace(/[0-9-]/g, ''); 
+        let isSharp = cleanName.includes("#");
+        let baseName = cleanName.replace("#", "");
+        let hexColor = ui.colors[baseName].value();
+        visCtx.beginPath();
+        if (baseName === "C" && !isSharp) {
+            visCtx.strokeStyle = hexColor; visCtx.globalAlpha = 0.6; visCtx.lineWidth = 1; visCtx.moveTo(0, y); visCtx.lineTo(w, y);
+            visCtx.globalAlpha = 1.0; visCtx.font = "bold 14px monospace"; visCtx.fillStyle = hexColor; visCtx.fillText(noteName, 5, y + 4);
+        } else if (!isSharp) {
+            visCtx.strokeStyle = hexColor; visCtx.globalAlpha = 0.2; visCtx.lineWidth = 1; visCtx.moveTo(0, y); visCtx.lineTo(w, y);
         }
+        visCtx.stroke();
     }
-    
-    visCtx.lineWidth = 3; 
-    visCtx.lineJoin = "round";
-    visCtx.globalAlpha = 1.0;
-    
+    visCtx.lineWidth = 3; visCtx.lineJoin = "round"; visCtx.globalAlpha = 1.0;
     for (let i = 1; i < pitchHistory.length; i++) {
         let f1 = pitchHistory[i-1]; let f2 = pitchHistory[i];
         if (f1 < 50 || f2 < 50) continue;
-        let y1 = map(Math.log(f1), minLog, maxLog, h-10, 10);
-        let y2 = map(Math.log(f2), minLog, maxLog, h-10, 10);
-        let noteName = midiToNoteName(Math.round(69 + 12 * Math.log2(f2/440)));
+        let m1 = 69 + 12 * Math.log2(f1 / 440); let m2 = 69 + 12 * Math.log2(f2 / 440);
+        let y1 = map(m1, minMidi, maxMidi, h - 10, 10); let y2 = map(m2, minMidi, maxMidi, h - 10, 10);
+        let noteName = midiToNoteName(Math.round(m2));
         visCtx.strokeStyle = getMixedColor(noteName).toString();
         visCtx.beginPath(); visCtx.moveTo(i-1, y1); visCtx.lineTo(i, y2); visCtx.stroke();
     }
+    // VOLUME BAR
+    let barW = 15; let barX = w - barW;
+    visCtx.fillStyle = '#111'; visCtx.fillRect(barX, 0, barW, h);
+    let barH = vol * h; 
+    visCtx.fillStyle = '#43b581'; visCtx.fillRect(barX, h - barH, barW, barH);
+    let threshY = h - (0.05 * h);
+    visCtx.strokeStyle = '#f04747'; visCtx.lineWidth = 2;
+    visCtx.beginPath(); visCtx.moveTo(barX, threshY); visCtx.lineTo(w, threshY); visCtx.stroke();
 }
 
-function randomizeBg() { let r = random(1)>0.5?random(20,50):random(200,250); let g = random(1)>0.5?random(20,50):random(200,250); let b = random(1)>0.5?random(20,50):random(200,250); let hexC = '#'+hex(r,2)+hex(g,2)+hex(b,2); ui.bg.value(hexC); }
-function randomizePalette() { let keys = ["C","D","E","F","G","A","B"]; keys.forEach(k => { let r=floor(random(255)); let g=floor(random(255)); let b=floor(random(255)); ui.colors[k].value('#'+hex(r,2)+hex(g,2)+hex(b,2)); }); }
-function changePalette() { let key = ui.palette.value(); if (key === 'custom') return; let colors = PALETTES[key]; if (!colors) return; let noteKeys = ["C", "D", "E", "F", "G", "A", "B"]; for(let i=0; i<7; i++) { if (ui.colors[noteKeys[i]]) ui.colors[noteKeys[i]].value(colors[i]); } }
-function updateBackground() { /* Input auto-update */ }
+function randomizeBg() { let r = random(1)>0.5?random(20,50):random(200,250); let g = random(1)>0.5?random(20,50):random(200,250); let b = random(1)>0.5?random(20,50):random(200,250); let hexC = '#'+hex(r,2)+hex(g,2)+hex(b,2); ui.bg.value(hexC); saveConfig(); }
+function randomizePalette() { let keys = ["C","D","E","F","G","A","B"]; keys.forEach(k => { let r=floor(random(255)); let g=floor(random(255)); let b=floor(random(255)); ui.colors[k].value('#'+hex(r,2)+hex(g,2)+hex(b,2)); }); saveConfig(); }
+function changePalette() { let key = ui.palette.value(); if (key === 'custom') return; let colors = PALETTES[key]; if (!colors) return; let noteKeys = ["C", "D", "E", "F", "G", "A", "B"]; for(let i=0; i<7; i++) { if (ui.colors[noteKeys[i]]) ui.colors[noteKeys[i]].value(colors[i]); } saveConfig(); }
+function updateBackground() { saveConfig(); }
 function getMixedColor(note) { if (note === "--") return color(50); let noteBase = note.replace(/[0-9-]/g, ''); let isSharp = noteBase.includes("#"); let cleanNote = noteBase.replace("#", ""); let c1 = color(ui.colors[cleanNote].value()); if (!isSharp) return c1; else { let wholeNotes = ["C", "D", "E", "F", "G", "A", "B"]; let idx = wholeNotes.indexOf(cleanNote); let nextNote = wholeNotes[(idx + 1) % 7]; let c2 = color(ui.colors[nextNote].value()); return lerpColor(c1, c2, 0.5); } }
 function freqToMidi(f) { return Math.round(69 + 12 * Math.log2(f / 440)); }
 function midiToNoteName(midi) { let notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]; let octave = Math.floor(midi / 12) - 1; return notes[midi % 12] + octave; }
-function keyPressed() { if (key === 'c' || key === 'C') { clearLayer(); } if (key === 's' || key === 'S') { saveArt(); } if (key === ' ') { toggleMic(); return false; } }
-function clearLayer() { pg.clear(); pos=createVector(width/2,height/2); prevPos=pos.copy(); vel.mult(0); }
-function saveArt() { let finalCanvas = createGraphics(width, height); finalCanvas.background(ui.bg.value()); finalCanvas.image(pg, 0, 0); save(finalCanvas, 'pollock_art.png'); }
+function clearLayer() { pg.clear(); localStorage.removeItem('voice_canvas_autosave'); pos=createVector(width/2,height/2); prevPos=pos.copy(); vel.mult(0); }
+function saveArt() { let finalCanvas = createGraphics(width, height); finalCanvas.background(ui.bg.value()); finalCanvas.image(pg, 0, 0); save(finalCanvas, 'voice_canvas_art.png'); }
 function windowResized() { resizeCanvas(windowWidth, windowHeight); let oldPg = pg; pg = createGraphics(windowWidth, windowHeight); pg.image(oldPg, 0, 0); }
