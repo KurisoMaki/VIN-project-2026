@@ -1,4 +1,5 @@
-// VOICE CANVAS - KANDINSKY MODE (FULL SETTINGS SYNC)
+// Audio Improvisation - KANDINSKY MODE
+// Author: Sofiia Kucherenko
 
 let audioContext, mic, pitch;
 let isModelReady = false;

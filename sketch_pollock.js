@@ -1,5 +1,5 @@
-// VOICE CANVAS 61.0 - ENGLISH (FIXED BUTTONS)
-// Author: [Your Name]
+// Audio Improvisation - POLLOCK MODE
+// Author: Sofiia Kucherenko
 
 let audioContext, mic, pitch;
 let isModelReady = false;

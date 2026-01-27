@@ -1,23 +1,74 @@
-# VIN
-# Screaming Pollock 🎨🎤
+# Audio Improvisation
 
-Interaktivní generativní nástroj, který transformuje zvuk na abstraktní malbu ve stylu Jacksona Pollocka.
+**Audio Improvisation** is an experimental web tool that transforms your voice (or any sound) into abstract visual art in real-time. It uses AI to detect pitch and volume, allowing you to paint without hands.
 
-**Odkaz na aplikaci:** https://kurisomaki.github.io/VIN/
+🔗 **[LAUNCH APP] (https://kurisomaki.github.io/VIN/)**
 
-## O projektu
-Tento projekt vznikl v rámci předmětu Výtvarná informatika. Aplikace využívá koncept **Action Painting** a převádí jej do digitálního prostředí. Místo fyzického pohybu ruky je gestem zvuková energie.
+---
 
-### Funkce
-- **Šepot a mluvení:** Vytváří tenké, propletené linie (inspirace technikou *dripping*).
-- **Křik, tlesknutí, beat:** Vytváří masivní barevné cákance (*splashing*).
+## Quick Start
 
-## Ovládání
-1. Povolte přístup k mikrofonu kliknutím na tlačítko **ZAČÍT TVOŘIT**.
-2. Vydávejte zvuky různé intenzity.
-3. **Klávesa 'S':** Uloží výsledný obraz jako PNG.
-4. **Klávesa 'C':** Vymaže plátno a začne znovu.
+1. **Open the link** in a modern browser (Chrome, Edge, Safari).
+2. **Allow microphone access** when prompted.
+3. Click the **START** button.
+4. **Make noise!** Sing, whistle, clap, or play music.
+   * **Loudness** controls the **Size** of the brush/shape.
+   * **Pitch** (High/Low notes) controls the **Color** and **Shape**.
 
-## Technologie
-- HTML5, CSS3
-- JavaScript (knihovna [p5.js](https://p5js.org/) a p5.sound)
+---
+
+## Creative Modes
+
+You can switch between two distinct artistic styles:
+
+### 1. POLLOCK MODE (Action Painting)
+Simulates the "drip painting" technique. The brush moves physically across the canvas.
+* **Physics:** The brush has momentum and viscosity.
+* **Pitch Gravity:** Low notes can pull the brush down, high notes pull it up.
+* **Speed:** Controls how fast the brush flies based on your volume.
+
+### 2. KANDINSKY MODE (Geometric Abstraction)
+Focuses on the relationship between geometry and sound.
+* **Musical Shapes:** Specific notes trigger specific shapes (e.g., **C** = Circle, **E** = Triangle).
+* **Geometry:** Generates overlapping shapes, wireframes, and auras.
+* **Static:** Shapes appear where they land; they do not move around.
+
+---
+
+## Parameters Guide
+
+Open the menu (☰) to adjust settings:
+
+### Colors & Customization
+* **Custom Note Colors:** You are not limited to presets! Click on any note color box (C, D, E...) in the menu to assign a specific color to that pitch.
+* **Background:** Click the background color picker to change the canvas color.
+* **Randomize:** Use the 🎲 buttons to instantly generate a random color palette or background.
+
+### Global Settings
+* **SENSITIVITY:** Microphone gain. Increase if the app doesn't react to your voice.
+* **OPACITY:** Transparency of the paint.
+* **CHAOS:** Adds randomness to position or line jitter.
+* **MIN/MAX SIZE:** Sets the range of brush sizes based on volume.
+
+### Kandinsky Specifics
+* **AURA %:** Chance to draw a soft, transparent shadow.
+* **OUTLINE %:** Chance to draw a contrasting border around the shape.
+* **NO FILL %:** Chance to draw a wireframe (empty) shape.
+* **HALF %:** Chance to draw only a semi-circle (arc).
+
+---
+
+## Keyboard Shortcuts
+
+* **SPACEBAR**: Start / Pause listening.
+* **S**: Save the current artwork as an image.
+* **C**: Clear the canvas.
+
+---
+
+### Note on Pitch Detection
+The app detects musical notes (C, D, E...).
+* **Low Pitch** (Deep voice) = Colors like Blue/Purple (Default).
+* **High Pitch** (High voice) = Colors like Yellow/White (Default).
+
+*(No manual installation required. Runs directly in the browser using p5.js and ml5.js)*
